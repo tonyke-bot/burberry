@@ -1,0 +1,32 @@
+[package]
+name = "burberry"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+alloy = { git = "https://github.com/alloy-rs/alloy.git", rev = "75299e7", features = [
+    "network",
+    "providers",
+    "rpc-client",
+    "rpc-types-eth",
+    "signer-wallet",
+    "transport-http",
+    "pubsub",
+] }
+alloy-provider = { git = "https://github.com/alloy-rs/alloy", rev = "75299e7", features = [
+    "pubsub",
+] }
+alloy-rpc-client = { git = "https://github.com/alloy-rs/alloy", rev = "75299e7", features = [
+    "pubsub",
+    "ws",
+] }
+async-trait = "0.1.51"
+eyre = "0.6.12"
+futures = "0.3.17"
+futures-util = "0.3"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = "1.37.0"
+tokio-stream = "0.1.15"
+tracing = { version = "0.1.37", features = ["log"] }
