@@ -753,6 +753,7 @@ dependencies = [
  "futures",
  "futures-util",
  "reqwest",
+ "serde_json",
  "tokio",
  "tokio-stream",
  "tracing",
