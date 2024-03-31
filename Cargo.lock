@@ -748,6 +748,7 @@ dependencies = [
  "alloy",
  "alloy-provider",
  "alloy-rpc-client",
+ "async-stream",
  "async-trait",
  "eyre",
  "futures",
@@ -755,7 +756,6 @@ dependencies = [
  "reqwest",
  "serde_json",
  "tokio",
- "tokio-stream",
  "tracing",
 ]
 

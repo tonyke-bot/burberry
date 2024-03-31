@@ -1,2 +1,7 @@
-pub mod block_collector;
-pub mod log_collector;
+mod block_collector;
+mod log_collector;
+mod logs_in_block_collector;
+
+pub use block_collector::BlockCollector;
+pub use log_collector::LogCollector;
+pub use logs_in_block_collector::LogsInBlockCollector;

@@ -6,7 +6,7 @@ use alloy::{
     rpc::types::eth::{Filter, Log},
 };
 use async_trait::async_trait;
-use tokio_stream::StreamExt;
+use futures::StreamExt;
 
 use crate::types::{Collector, CollectorStream};
 
@@ -31,7 +31,7 @@ impl<T, P> LogCollector<T, P> {
 impl<P: Provider<PubSubFrontend>> Collector<Log> for LogCollector<PubSubFrontend, P> {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Log>> {
         let stream = self.provider.subscribe_logs(&self.filter).await?;
-        let stream = stream.into_stream().filter_map(Some);
+        let stream = stream.into_stream().filter_map(|v| async move { Some(v) });
         Ok(Box::pin(stream))
     }
 }

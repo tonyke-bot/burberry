@@ -123,7 +123,10 @@ impl TelegramMessageDispatcher {
         }
 
         if let Some(disable_notification) = &message.disable_notification {
-            data.insert("disable_notification".to_string(), json!(disable_notification));
+            data.insert(
+                "disable_notification".to_string(),
+                json!(disable_notification),
+            );
         }
 
         if let Some(protect_content) = &message.protect_content {
@@ -192,7 +195,10 @@ impl TelegramMessageDispatcher {
         let response = match response {
             Ok(response) if response.status() != StatusCode::OK => {
                 let status = response.status();
-                let body = response.text().await.unwrap_or("fail to read body".to_string());
+                let body = response
+                    .text()
+                    .await
+                    .unwrap_or("fail to read body".to_string());
 
                 eyre::bail!("response status: {status}, body: {body}");
             }

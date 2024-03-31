@@ -5,8 +5,8 @@ use alloy::{
     providers::Provider,
     transports::Transport,
 };
-use eyre::Result;
 use async_trait::async_trait;
+use eyre::Result;
 
 use crate::types::Executor;
 

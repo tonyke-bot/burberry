@@ -1,14 +1,13 @@
 use std::{fmt::Debug, sync::Arc};
 
-use tokio::{
-    sync::broadcast::{self, error::RecvError, Sender},
-    task::JoinSet,
-};
-use tokio_stream::StreamExt;
-
 use crate::{
     action_submitter::ActionChannelSubmitter,
     types::{Collector, Executor, Strategy},
+};
+use futures::StreamExt;
+use tokio::{
+    sync::broadcast::{self, error::RecvError, Sender},
+    task::JoinSet,
 };
 
 pub struct Engine<E, A> {
@@ -110,9 +109,15 @@ where
 
                 loop {
                     match event_receiver.recv().await {
-                        Ok(event) => strategy.process_event(event, action_submitter.clone()).await,
+                        Ok(event) => {
+                            strategy
+                                .process_event(event, action_submitter.clone())
+                                .await
+                        }
                         Err(RecvError::Closed) => panic!("event channel closed"),
-                        Err(RecvError::Lagged(num)) => tracing::warn!("event channel lagged by {num}"),
+                        Err(RecvError::Lagged(num)) => {
+                            tracing::warn!("event channel lagged by {num}")
+                        }
                     }
                 }
             });

@@ -2,7 +2,7 @@ use std::{pin::Pin, sync::Arc};
 
 use async_trait::async_trait;
 use eyre::Result;
-use tokio_stream::{Stream, StreamExt};
+use futures::{Stream, StreamExt};
 
 pub type CollectorStream<'a, E> = Pin<Box<dyn Stream<Item = E> + Send + 'a>>;
 
@@ -73,12 +73,12 @@ impl<E1, E2, F> Collector<E2> for CollectorFilterMap<E1, F>
 where
     E1: Send + Sync + 'static,
     E2: Send + Sync + 'static,
-    F: Fn(E1) -> Option<E2> + Send + Sync + Clone + 'static,
+    F: Fn(E1) -> Option<E2> + Send + Sync + Clone + Copy + 'static,
 {
     async fn get_event_stream(&self) -> Result<CollectorStream<'_, E2>> {
         let stream = self.collector.get_event_stream().await?;
-        let f = self.f.clone();
-        let stream = stream.filter_map(f);
+        let f = self.f;
+        let stream = stream.filter_map(move |v| async move { f(v) });
         Ok(Box::pin(stream))
     }
 }

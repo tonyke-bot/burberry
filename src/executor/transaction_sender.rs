@@ -65,8 +65,13 @@ impl<T1, P1, T2, P2> SendTransactionExecutor<T1, P1, T2, P2> {
 }
 
 impl<T1, P1> SendTransactionExecutor<T1, P1, Http<Client>, RootProvider<Http<Client>>> {
-    pub fn new_http_dedicated(provider: P1, tx_submission_endpoint: &str, signers: Vec<LocalWallet>) -> Self {
-        let tx_submission_provider = RootProvider::<_>::new_http(tx_submission_endpoint.parse().unwrap());
+    pub fn new_http_dedicated(
+        provider: P1,
+        tx_submission_endpoint: &str,
+        signers: Vec<LocalWallet>,
+    ) -> Self {
+        let tx_submission_provider =
+            RootProvider::<_>::new_http(tx_submission_endpoint.parse().unwrap());
         Self::new_with_dedicated_tx_submission_endpoint(provider, tx_submission_provider, signers)
     }
 
@@ -139,7 +144,11 @@ where
                 .send_raw_transaction(&raw_tx)
                 .await
                 .map(|v| *v.tx_hash()),
-            None => self.provider.send_raw_transaction(&raw_tx).await.map(|v| *v.tx_hash()),
+            None => self
+                .provider
+                .send_raw_transaction(&raw_tx)
+                .await
+                .map(|v| *v.tx_hash()),
         };
 
         let tx_hash = match send_result {
