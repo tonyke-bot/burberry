@@ -10,13 +10,13 @@ use eyre::Result;
 
 use crate::types::Executor;
 
-pub struct RawTransactionSenderExecutor<T, P> {
+pub struct RawTransactionSender<T, P> {
     provider: Arc<P>,
 
     _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T, P> RawTransactionSenderExecutor<T, P> {
+impl<T, P> RawTransactionSender<T, P> {
     pub fn new(provider: Arc<P>) -> Self {
         Self {
             provider,
@@ -27,7 +27,7 @@ impl<T, P> RawTransactionSenderExecutor<T, P> {
 }
 
 #[async_trait]
-impl<T: Transport + Clone, P: Provider<T>> Executor<Bytes> for RawTransactionSenderExecutor<T, P> {
+impl<T: Transport + Clone, P: Provider<T>> Executor<Bytes> for RawTransactionSender<T, P> {
     async fn execute(&self, action: Bytes) -> Result<()> {
         let send_result = self.provider.send_raw_transaction(&action).await;
 

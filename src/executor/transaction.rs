@@ -12,7 +12,7 @@ use reqwest::Client;
 
 use crate::types::Executor;
 
-pub struct SendTransactionExecutor<T1, P1, T2, P2> {
+pub struct TransactionSender<T1, P1, T2, P2> {
     signers: HashMap<Address, EthereumSigner>,
     provider: Arc<P1>,
     tx_submission_provider: Option<P2>,
@@ -20,7 +20,7 @@ pub struct SendTransactionExecutor<T1, P1, T2, P2> {
     _phantom: PhantomData<(T1, T2)>,
 }
 
-impl<T1, P1> SendTransactionExecutor<T1, P1, T1, P1> {
+impl<T1, P1> TransactionSender<T1, P1, T1, P1> {
     pub fn new(provider: P1, signers: Vec<LocalWallet>) -> Self {
         let signers: HashMap<_, _> = signers
             .into_iter()
@@ -40,7 +40,7 @@ impl<T1, P1> SendTransactionExecutor<T1, P1, T1, P1> {
     }
 }
 
-impl<T1, P1, T2, P2> SendTransactionExecutor<T1, P1, T2, P2> {
+impl<T1, P1, T2, P2> TransactionSender<T1, P1, T2, P2> {
     pub fn new_with_dedicated_tx_submission_endpoint(
         provider: P1,
         tx_submission_provider: P2,
@@ -64,7 +64,7 @@ impl<T1, P1, T2, P2> SendTransactionExecutor<T1, P1, T2, P2> {
     }
 }
 
-impl<T1, P1> SendTransactionExecutor<T1, P1, Http<Client>, RootProvider<Http<Client>>> {
+impl<T1, P1> TransactionSender<T1, P1, Http<Client>, RootProvider<Http<Client>>> {
     pub fn new_http_dedicated(
         provider: P1,
         tx_submission_endpoint: &str,
@@ -97,7 +97,7 @@ impl<T1, P1> SendTransactionExecutor<T1, P1, Http<Client>, RootProvider<Http<Cli
 }
 
 #[async_trait::async_trait]
-impl<T1, P1, T2, P2> Executor<TransactionRequest> for SendTransactionExecutor<T1, P1, T2, P2>
+impl<T1, P1, T2, P2> Executor<TransactionRequest> for TransactionSender<T1, P1, T2, P2>
 where
     T1: Transport + Clone,
     P1: Provider<T1>,
