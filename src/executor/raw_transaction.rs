@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use alloy::{
     primitives::{keccak256, Bytes},
     providers::Provider,
@@ -10,24 +8,18 @@ use eyre::Result;
 
 use crate::types::Executor;
 
-pub struct RawTransactionSender<T, P> {
-    provider: Arc<P>,
-
-    _phantom: std::marker::PhantomData<T>,
+pub struct RawTransactionSender<T> {
+    provider: Box<dyn Provider<T>>,
 }
 
-impl<T, P> RawTransactionSender<T, P> {
-    pub fn new(provider: Arc<P>) -> Self {
-        Self {
-            provider,
-
-            _phantom: Default::default(),
-        }
+impl<T> RawTransactionSender<T> {
+    pub fn new(provider: Box<dyn Provider<T>>) -> Self {
+        Self { provider }
     }
 }
 
 #[async_trait]
-impl<T: Transport + Clone, P: Provider<T>> Executor<Bytes> for RawTransactionSender<T, P> {
+impl<T: Transport + Clone> Executor<Bytes> for RawTransactionSender<T> {
     async fn execute(&self, action: Bytes) -> Result<()> {
         let send_result = self.provider.send_raw_transaction(&action).await;
 

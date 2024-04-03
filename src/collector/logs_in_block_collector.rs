@@ -11,24 +11,18 @@ use futures::StreamExt;
 
 use crate::types::{Collector, CollectorStream};
 
-pub struct LogsInBlockCollector<T, P> {
-    provider: Arc<P>,
+pub struct LogsInBlockCollector<T> {
+    provider: Arc<dyn Provider<T>>,
     filter: Filter,
-
-    _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T, P> LogsInBlockCollector<T, P> {
-    pub async fn new(provider: Arc<P>, filter: Filter) -> Self {
-        Self {
-            provider,
-            filter,
-            _phantom: Default::default(),
-        }
+impl<T> LogsInBlockCollector<T> {
+    pub async fn new(provider: Arc<dyn Provider<T>>, filter: Filter) -> Self {
+        Self { provider, filter }
     }
 }
 
-impl<P: Provider<PubSubFrontend>> LogsInBlockCollector<PubSubFrontend, P> {
+impl LogsInBlockCollector<PubSubFrontend> {
     async fn block_to_logs(&self, block_hash: B256) -> Option<Vec<Log>> {
         let logs = self
             .provider
@@ -46,9 +40,7 @@ impl<P: Provider<PubSubFrontend>> LogsInBlockCollector<PubSubFrontend, P> {
 }
 
 #[async_trait]
-impl<P: Provider<PubSubFrontend>> Collector<(Block, Vec<Log>)>
-    for LogsInBlockCollector<PubSubFrontend, P>
-{
+impl Collector<(Block, Vec<Log>)> for LogsInBlockCollector<PubSubFrontend> {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, (Block, Vec<Log>)>> {
         let mut stream = self.provider.subscribe_blocks().await?.into_stream();
 
