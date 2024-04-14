@@ -126,7 +126,7 @@ where
         };
 
         let nonce = match self.provider.get_transaction_count(account, None).await {
-            Ok(v) => v.as_limbs()[0],
+            Ok(v) => v,
             Err(err) => {
                 tracing::error!(?account, "failed to get nonce: {err:#}");
                 return Ok(());
