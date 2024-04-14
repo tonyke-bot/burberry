@@ -10,7 +10,7 @@ pub struct BlockCollector<T> {
 }
 
 impl<T> BlockCollector<T> {
-    pub async fn new(provider: Arc<dyn Provider<T>>) -> Self {
+    pub fn new(provider: Arc<dyn Provider<T>>) -> Self {
         Self { provider }
     }
 }

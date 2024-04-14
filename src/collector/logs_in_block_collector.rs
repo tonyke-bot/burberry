@@ -17,7 +17,7 @@ pub struct LogsInBlockCollector<T> {
 }
 
 impl<T> LogsInBlockCollector<T> {
-    pub async fn new(provider: Arc<dyn Provider<T>>, filter: Filter) -> Self {
+    pub fn new(provider: Arc<dyn Provider<T>>, filter: Filter) -> Self {
         Self { provider, filter }
     }
 }
