@@ -91,7 +91,10 @@ where
                             Ok(_) => {}
                             Err(e) => tracing::error!("error executing action: {}", e),
                         },
-                        Err(e) => tracing::error!("error receiving action: {}", e),
+                        Err(RecvError::Closed) => panic!("action chanel closed!"),
+                        Err(RecvError::Lagged(num)) => {
+                            tracing::warn!("action channel lagged by {num}")
+                        }
                     }
                 }
             });
@@ -130,9 +133,8 @@ where
                 tracing::info!("starting collector... ");
                 let mut event_stream = collector.get_event_stream().await.unwrap();
                 while let Some(event) = event_stream.next().await {
-                    match event_sender.send(event) {
-                        Ok(_) => {}
-                        Err(e) => tracing::error!("error sending event: {}", e),
+                    if let Err(e) = event_sender.send(event) {
+                        tracing::error!("error sending event: {e:#}");
                     }
                 }
             });
