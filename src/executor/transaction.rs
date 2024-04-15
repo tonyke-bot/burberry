@@ -6,20 +6,18 @@ use alloy::{
     providers::{Provider, RootProvider},
     rpc::types::eth::TransactionRequest,
     signers::wallet::LocalWallet,
-    transports::{http::Http, Transport},
 };
-use reqwest::Client;
 
 use crate::types::Executor;
 
-pub struct TransactionSender<T1, T2> {
+pub struct TransactionSender {
     signers: HashMap<Address, EthereumSigner>,
-    provider: Box<dyn Provider<T1>>,
-    tx_submission_provider: Option<Box<dyn Provider<T2>>>,
+    provider: Box<dyn Provider>,
+    tx_submission_provider: Option<Box<dyn Provider>>,
 }
 
-impl<T> TransactionSender<T, T> {
-    pub fn new(provider: Box<dyn Provider<T>>, signers: Vec<LocalWallet>) -> Self {
+impl TransactionSender {
+    pub fn new(provider: Box<dyn Provider>, signers: Vec<LocalWallet>) -> Self {
         let signers: HashMap<_, _> = signers
             .into_iter()
             .map(|s| (s.address(), EthereumSigner::new(s)))
@@ -37,10 +35,10 @@ impl<T> TransactionSender<T, T> {
     }
 }
 
-impl<T1, T2> TransactionSender<T1, T2> {
+impl TransactionSender {
     pub fn new_with_dedicated_tx_submission_endpoint(
-        provider: Box<dyn Provider<T1>>,
-        tx_submission_provider: Box<dyn Provider<T2>>,
+        provider: Box<dyn Provider>,
+        tx_submission_provider: Box<dyn Provider>,
         signers: Vec<LocalWallet>,
     ) -> Self {
         let signers: HashMap<_, _> = signers
@@ -58,44 +56,38 @@ impl<T1, T2> TransactionSender<T1, T2> {
             tx_submission_provider: Some(tx_submission_provider),
         }
     }
-}
 
-impl<T> TransactionSender<T, Http<Client>> {
     pub fn new_http_dedicated(
-        provider: Box<dyn Provider<T>>,
+        provider: Box<dyn Provider>,
         tx_submission_endpoint: &str,
         signers: Vec<LocalWallet>,
     ) -> Self {
-        let tx_submission_provider = Box::new(RootProvider::<_>::new_http(
-            tx_submission_endpoint.parse().unwrap(),
-        ));
+        let tx_submission_provider =
+            Box::new(RootProvider::<_>::new_http(tx_submission_endpoint.parse().unwrap()).boxed());
         Self::new_with_dedicated_tx_submission_endpoint(provider, tx_submission_provider, signers)
     }
 
-    pub fn new_with_flashbots(provider: Box<dyn Provider<T>>, signers: Vec<LocalWallet>) -> Self {
+    pub fn new_with_flashbots(provider: Box<dyn Provider>, signers: Vec<LocalWallet>) -> Self {
         Self::new_http_dedicated(provider, "https://rpc.flashbots.net/fast", signers)
     }
 
-    pub fn new_with_bsc_bloxroute(
-        provider: Box<dyn Provider<T>>,
-        signers: Vec<LocalWallet>,
-    ) -> Self {
+    pub fn new_with_bsc_bloxroute(provider: Box<dyn Provider>, signers: Vec<LocalWallet>) -> Self {
         Self::new_http_dedicated(provider, "https://bsc.rpc.blxrbdn.com", signers)
     }
 
-    pub fn new_with_48club(provider: Box<dyn Provider<T>>, signers: Vec<LocalWallet>) -> Self {
+    pub fn new_with_48club(provider: Box<dyn Provider>, signers: Vec<LocalWallet>) -> Self {
         Self::new_http_dedicated(provider, "https://rpc-bsc.48.club", signers)
     }
 
     pub fn new_with_polygon_bloxroute(
-        provider: Box<dyn Provider<T>>,
+        provider: Box<dyn Provider>,
         signers: Vec<LocalWallet>,
     ) -> Self {
         Self::new_http_dedicated(provider, "https://polygon.rpc.blxrbdn.com", signers)
     }
 
     pub fn new_with_arbitrum_sequencer(
-        provider: Box<dyn Provider<T>>,
+        provider: Box<dyn Provider>,
         signers: Vec<LocalWallet>,
     ) -> Self {
         Self::new_http_dedicated(provider, "https://arb1-sequencer.arbitrum.io/rpc", signers)
@@ -103,11 +95,7 @@ impl<T> TransactionSender<T, Http<Client>> {
 }
 
 #[async_trait::async_trait]
-impl<T1, T2> Executor<TransactionRequest> for TransactionSender<T1, T2>
-where
-    T1: Transport + Clone,
-    T2: Transport + Clone,
-{
+impl Executor<TransactionRequest> for TransactionSender {
     async fn execute(&self, action: TransactionRequest) -> eyre::Result<()> {
         let account = match action.from {
             Some(v) => v,
