@@ -1,10 +1,12 @@
 mod map;
 mod printer;
+mod telegram;
 
 use std::fmt::Debug;
 
 pub use map::ActionSubmitterMap;
 pub use printer::ActionPrinter;
+pub use telegram::TelegramSubmitter;
 use tokio::sync::broadcast::Sender;
 
 use crate::ActionSubmitter;
