@@ -221,6 +221,12 @@ impl TelegramMessageDispatcher {
     }
 }
 
+impl Default for TelegramMessageDispatcher {
+    fn default() -> Self {
+        Self::new_without_error_report()
+    }
+}
+
 #[async_trait]
 impl Executor<Message> for TelegramMessageDispatcher {
     async fn execute(&self, action: Message) -> eyre::Result<()> {
