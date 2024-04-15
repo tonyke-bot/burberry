@@ -1,25 +1,24 @@
 use alloy::{
     primitives::{keccak256, Bytes},
     providers::Provider,
-    transports::Transport,
 };
 use async_trait::async_trait;
 use eyre::Result;
 
 use crate::types::Executor;
 
-pub struct RawTransactionSender<T> {
-    provider: Box<dyn Provider<T>>,
+pub struct RawTransactionSender {
+    provider: Box<dyn Provider>,
 }
 
-impl<T> RawTransactionSender<T> {
-    pub fn new(provider: Box<dyn Provider<T>>) -> Self {
+impl RawTransactionSender {
+    pub fn new(provider: Box<dyn Provider>) -> Self {
         Self { provider }
     }
 }
 
 #[async_trait]
-impl<T: Transport + Clone> Executor<Bytes> for RawTransactionSender<T> {
+impl Executor<Bytes> for RawTransactionSender {
     async fn execute(&self, action: Bytes) -> Result<()> {
         let send_result = self.provider.send_raw_transaction(&action).await;
 

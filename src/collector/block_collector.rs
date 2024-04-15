@@ -5,12 +5,12 @@ use async_trait::async_trait;
 
 use crate::types::{Collector, CollectorStream};
 
-pub struct BlockCollector<T> {
-    provider: Arc<dyn Provider<T>>,
+pub struct BlockCollector<PubSubFrontend> {
+    provider: Arc<dyn Provider<PubSubFrontend>>,
 }
 
-impl<T> BlockCollector<T> {
-    pub fn new(provider: Arc<dyn Provider<T>>) -> Self {
+impl<PubSubFrontend> BlockCollector<PubSubFrontend> {
+    pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>) -> Self {
         Self { provider }
     }
 }

@@ -10,19 +10,19 @@ use futures::StreamExt;
 
 use crate::types::{Collector, CollectorStream};
 
-pub struct LogCollector<T> {
-    provider: Arc<dyn Provider<T>>,
+pub struct LogCollector {
+    provider: Arc<dyn Provider<PubSubFrontend>>,
     filter: Filter,
 }
 
-impl<T> LogCollector<T> {
-    pub fn new(provider: Arc<dyn Provider<T>>, filter: Filter) -> Self {
+impl LogCollector {
+    pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>, filter: Filter) -> Self {
         Self { provider, filter }
     }
 }
 
 #[async_trait]
-impl Collector<Log> for LogCollector<PubSubFrontend> {
+impl Collector<Log> for LogCollector {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Log>> {
         let stream = self.provider.subscribe_logs(&self.filter).await?;
         let stream = stream.into_stream().filter_map(|v| async move { Some(v) });
