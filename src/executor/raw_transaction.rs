@@ -4,15 +4,16 @@ use alloy::{
 };
 use async_trait::async_trait;
 use eyre::Result;
+use std::sync::Arc;
 
 use crate::types::Executor;
 
 pub struct RawTransactionSender {
-    provider: Box<dyn Provider>,
+    provider: Arc<dyn Provider>,
 }
 
 impl RawTransactionSender {
-    pub fn new(provider: Box<dyn Provider>) -> Self {
+    pub fn new(provider: Arc<dyn Provider>) -> Self {
         Self { provider }
     }
 }

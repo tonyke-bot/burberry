@@ -1,8 +1,5 @@
-use crate::{
-    ActionSubmitter,
-    Executor,
-};
 use crate::executor::telegram_message::{Message, TelegramMessageDispatcher};
+use crate::{ActionSubmitter, Executor};
 
 pub struct TelegramSubmitter {
     executor: TelegramMessageDispatcher,
