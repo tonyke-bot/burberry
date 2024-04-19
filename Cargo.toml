@@ -6,13 +6,16 @@ rust-version = "1.76"
 
 [dependencies]
 alloy = { git = "https://github.com/alloy-rs/alloy.git", rev = "037dd4b20ec8533d6b6d5cf5e9489bbb182c18c6", features = [
+    "contract",
     "network",
     "providers",
+    "provider-ipc",
+    "provider-ws",
     "rpc-client",
+    "rpc-client-ws",
     "rpc-types-eth",
+    "signers",
     "signer-wallet",
-    "transport-http",
-    "pubsub",
 ] }
 async-stream = "0.3.5"
 async-trait = "0.1.51"
