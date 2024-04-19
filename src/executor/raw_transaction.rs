@@ -1,3 +1,4 @@
+use alloy::transports::Transport;
 use alloy::{
     primitives::{keccak256, Bytes},
     providers::Provider,
@@ -8,18 +9,18 @@ use std::sync::Arc;
 
 use crate::types::Executor;
 
-pub struct RawTransactionSender {
-    provider: Arc<dyn Provider>,
+pub struct RawTransactionSender<T> {
+    provider: Arc<dyn Provider<T>>,
 }
 
-impl RawTransactionSender {
-    pub fn new(provider: Arc<dyn Provider>) -> Self {
+impl<T> RawTransactionSender<T> {
+    pub fn new(provider: Arc<dyn Provider<T>>) -> Self {
         Self { provider }
     }
 }
 
 #[async_trait]
-impl Executor<Bytes> for RawTransactionSender {
+impl<T: Clone + Transport> Executor<Bytes> for RawTransactionSender<T> {
     async fn execute(&self, action: Bytes) -> Result<()> {
         let send_result = self.provider.send_raw_transaction(&action).await;
 
