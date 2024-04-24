@@ -5,18 +5,18 @@ use async_trait::async_trait;
 
 use crate::types::{Collector, CollectorStream};
 
-pub struct BlockCollector<PubSubFrontend> {
+pub struct BlockCollector {
     provider: Arc<dyn Provider<PubSubFrontend>>,
 }
 
-impl<PubSubFrontend> BlockCollector<PubSubFrontend> {
+impl BlockCollector {
     pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>) -> Self {
         Self { provider }
     }
 }
 
 #[async_trait]
-impl Collector<Block> for BlockCollector<PubSubFrontend> {
+impl Collector<Block> for BlockCollector {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
         let stream = self.provider.subscribe_blocks().await?;
 

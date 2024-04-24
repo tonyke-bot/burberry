@@ -72,6 +72,14 @@ where
         self.executors.push(executor);
     }
 
+    pub async fn run_and_join(self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut js = self.run().await?;
+        while let Some(event) = js.join_next().await {
+            tracing::info!("event: {:?}", event);
+        }
+        Ok(())
+    }
+
     pub async fn run(self) -> Result<JoinSet<()>, Box<dyn std::error::Error>> {
         let (event_sender, _): (Sender<E>, _) = broadcast::channel(self.event_channel_capacity);
         let (action_sender, _): (Sender<A>, _) = broadcast::channel(self.action_channel_capacity);
