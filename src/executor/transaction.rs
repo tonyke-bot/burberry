@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use alloy::rpc::types::eth::BlockId;
 use alloy::transports::Transport;
 use alloy::{
     network::{eip2718::Encodable2718, EthereumSigner, TransactionBuilder},
@@ -119,7 +120,11 @@ impl<T: Clone + Transport> Executor<TransactionRequest> for TransactionSender<T>
             }
         };
 
-        let nonce = match self.provider.get_transaction_count(account, None).await {
+        let nonce = match self
+            .provider
+            .get_transaction_count(account, BlockId::latest())
+            .await
+        {
             Ok(v) => v,
             Err(err) => {
                 tracing::error!(?account, "failed to get nonce: {err:#}");
