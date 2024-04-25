@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.76"
 
 [dependencies]
-alloy = { git = "https://github.com/alloy-rs/alloy.git", rev = "037dd4b20ec8533d6b6d5cf5e9489bbb182c18c6", features = [
+alloy = { git = "https://github.com/alloy-rs/alloy.git", rev = "e9d73d1", features = [
     "contract",
     "network",
     "providers",
