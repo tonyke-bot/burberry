@@ -13,6 +13,7 @@ pub struct Message {
     pub disable_notification: Option<bool>,
     pub protect_content: Option<bool>,
     pub disable_link_preview: Option<bool>,
+    pub parse_mode: Option<String>,
 }
 
 #[derive(Clone, Default)]
@@ -24,6 +25,7 @@ pub struct MessageBuilder {
     disable_notification: Option<bool>,
     protect_content: Option<bool>,
     disable_link_preview: Option<bool>,
+    parse_mode: Option<String>,
 }
 
 impl MessageBuilder {
@@ -66,6 +68,11 @@ impl MessageBuilder {
         self
     }
 
+    pub fn parse_mode<T: Into<String>>(mut self, parse_mode: T) -> Self {
+        self.parse_mode = Some(parse_mode.into());
+        self
+    }
+
     pub fn build(self) -> Message {
         Message {
             bot_token: self.bot_token.unwrap_or_default(),
@@ -75,6 +82,7 @@ impl MessageBuilder {
             disable_notification: self.disable_notification,
             protect_content: self.protect_content,
             disable_link_preview: self.disable_link_preview,
+            parse_mode: self.parse_mode,
         }
     }
 }
@@ -116,7 +124,13 @@ impl TelegramMessageDispatcher {
 
         data.insert("chat_id".to_string(), json!(&message.chat_id));
         data.insert("text".to_string(), json!(&message.text));
-        data.insert("parse_mode".to_string(), json!("MarkdownV2"));
+        data.insert(
+            "parse_mode".to_string(),
+            json!(&message
+                .parse_mode
+                .clone()
+                .unwrap_or("MarkdownV2".to_string())),
+        );
 
         if let Some(thread_id) = &message.thread_id {
             data.insert("message_thread_id".to_string(), json!(thread_id));
