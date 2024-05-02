@@ -253,7 +253,7 @@ impl Executor<Message> for TelegramMessageDispatcher {
 }
 
 pub fn escape(raw: &str) -> String {
-    let escaped_characters = r"\*_[](~`>#-|{}.!+";
+    let escaped_characters = r"\*_[]~`>#-|{}.!+()=";
     let escaped_string: String = raw
         .chars()
         .map(|c| {
