@@ -104,6 +104,8 @@ impl<T> TransactionSender<T> {
 #[async_trait::async_trait]
 impl<T: Clone + Transport> Executor<TransactionRequest> for TransactionSender<T> {
     async fn execute(&self, action: TransactionRequest) -> eyre::Result<()> {
+        let mut action = action;
+
         let account = match action.from {
             Some(v) => v,
             None => {
@@ -120,27 +122,31 @@ impl<T: Clone + Transport> Executor<TransactionRequest> for TransactionSender<T>
             }
         };
 
-        let nonce = match self
-            .provider
-            .get_transaction_count(account, BlockId::latest())
-            .await
-        {
-            Ok(v) => v,
-            Err(err) => {
-                tracing::error!(?account, "failed to get nonce: {err:#}");
-                return Ok(());
-            }
-        };
+        if action.nonce.is_none() {
+            let nonce = match self
+                .provider
+                .get_transaction_count(account, BlockId::latest())
+                .await
+            {
+                Ok(v) => v,
+                Err(err) => {
+                    tracing::error!(?account, "failed to get nonce: {err:#}");
+                    return Ok(());
+                }
+            };
 
-        let raw_tx: Bytes = match action.nonce(nonce).build(signer).await {
+            action.set_nonce(nonce);
+        }
+
+        let raw_tx: Bytes = match action.build(signer).await {
             Ok(v) => v.encoded_2718().into(),
             Err(err) => {
-                tracing::error!(?account, nonce, "failed to build tx: {err:#}");
+                tracing::error!(?account, "failed to build tx: {err:#}");
                 return Ok(());
             }
         };
 
-        tracing::debug!(?account, nonce, tx = ?raw_tx, "signed tx");
+        tracing::debug!(?account, tx = ?raw_tx, "signed tx");
 
         let send_result = match &self.tx_submission_provider {
             Some(dedicated_provider) => dedicated_provider
@@ -158,12 +164,12 @@ impl<T: Clone + Transport> Executor<TransactionRequest> for TransactionSender<T>
             Ok(v) => v,
             Err(err) => {
                 let hash = keccak256(&raw_tx);
-                tracing::error!(?account, nonce, tx = ?hash, "failed to send tx: {err:#}");
+                tracing::error!(?account, tx = ?hash, "failed to send tx: {err:#}");
                 return Ok(());
             }
         };
 
-        tracing::info!(?account, nonce, "sent tx: {:#x}", tx_hash);
+        tracing::info!(?account, "sent tx: {:#x}", tx_hash);
 
         Ok(())
     }
