@@ -9,6 +9,7 @@ use tokio::{
     sync::broadcast::{self, error::RecvError, Sender},
     task::JoinSet,
 };
+use tracing::{debug, error, info, warn};
 
 pub struct Engine<E, A> {
     collectors: Vec<Box<dyn Collector<E>>>,
@@ -75,7 +76,7 @@ where
     pub async fn run_and_join(self) -> Result<(), Box<dyn std::error::Error>> {
         let mut js = self.run().await?;
         while let Some(event) = js.join_next().await {
-            tracing::info!("event: {:?}", event);
+            info!("event: {:?}", event);
         }
         Ok(())
     }
@@ -86,22 +87,20 @@ where
 
         let mut set = JoinSet::new();
 
-        tracing::info!("burberry engine started");
-
         // Spawn executors in separate threads.
         for executor in self.executors {
             let mut receiver = action_sender.subscribe();
             set.spawn(async move {
-                tracing::info!("starting executor... ");
+                debug!("starting executor... ");
                 loop {
                     match receiver.recv().await {
                         Ok(action) => match executor.execute(action).await {
                             Ok(_) => {}
-                            Err(e) => tracing::error!("error executing action: {}", e),
+                            Err(e) => error!("error executing action: {}", e),
                         },
                         Err(RecvError::Closed) => panic!("action chanel closed!"),
                         Err(RecvError::Lagged(num)) => {
-                            tracing::warn!("action channel lagged by {num}")
+                            warn!("action channel lagged by {num}")
                         }
                     }
                 }
@@ -116,7 +115,7 @@ where
             let action_submitter = Arc::new(ActionChannelSubmitter::new(action_sender));
 
             set.spawn(async move {
-                tracing::info!("starting strategy... ");
+                debug!("starting strategy... ");
 
                 loop {
                     match event_receiver.recv().await {
@@ -127,7 +126,7 @@ where
                         }
                         Err(RecvError::Closed) => panic!("event channel closed"),
                         Err(RecvError::Lagged(num)) => {
-                            tracing::warn!("event channel lagged by {num}")
+                            warn!("event channel lagged by {num}")
                         }
                     }
                 }
@@ -138,11 +137,11 @@ where
         for collector in self.collectors {
             let event_sender = event_sender.clone();
             set.spawn(async move {
-                tracing::info!("starting collector... ");
+                debug!("starting collector... ");
                 let mut event_stream = collector.get_event_stream().await.unwrap();
                 while let Some(event) = event_stream.next().await {
                     if let Err(e) = event_sender.send(event) {
-                        tracing::error!("error sending event: {e:#}");
+                        error!("error sending event: {e:#}");
                     }
                 }
             });
