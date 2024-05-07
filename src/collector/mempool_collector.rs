@@ -1,86 +1,156 @@
 use std::sync::Arc;
 
+use crate::types::{Collector, CollectorStream};
+use alloy::transports::{RpcError, Transport, TransportErrorKind};
 use alloy::{
     primitives::B256, providers::Provider, pubsub::PubSubFrontend, rpc::types::eth::Transaction,
 };
-use async_channel::bounded;
 use async_trait::async_trait;
-use tokio::sync::mpsc::channel;
-use tracing::{error, trace};
-
-use crate::types::{Collector, CollectorStream};
+use eyre::WrapErr;
+use futures_util::{stream::FuturesUnordered, FutureExt, Stream, StreamExt};
+use std::future::Future;
+use std::{
+    collections::VecDeque,
+    pin::Pin,
+    task::{Context, Poll},
+};
+use tracing::error;
 
 pub struct MempoolCollector {
     provider: Arc<dyn Provider<PubSubFrontend>>,
-    concurrency: usize,
 }
 
 impl MempoolCollector {
     pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>) -> Self {
-        Self::new_with_concurrency(provider, 10)
-    }
-
-    pub fn new_with_concurrency(
-        provider: Arc<dyn Provider<PubSubFrontend>>,
-        concurrency: usize,
-    ) -> Self {
-        Self {
-            provider,
-            concurrency,
-        }
+        Self { provider }
     }
 }
 
 #[async_trait]
 impl Collector<Transaction> for MempoolCollector {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Transaction>> {
-        let (ch_hash_tx, ch_hash_rx) = bounded::<B256>(2048);
-        let (ch_tx_tx, mut ch_tx_rx) = channel::<Transaction>(128);
+        let stream = self
+            .provider
+            .subscribe_pending_transactions()
+            .await
+            .wrap_err("fail to subscribe to pending transaction stream")?
+            .into_stream();
 
-        for _ in 0..self.concurrency {
-            let provider = self.provider.clone();
-            let ch_hash_rx = ch_hash_rx.clone();
-            let ch_tx_tx = ch_tx_tx.clone();
-
-            tokio::spawn(async move {
-                while let Ok(hash) = ch_hash_rx.recv().await {
-                    trace!(target: "pending-tx-fetcher", %hash, "fetching pending transaction");
-
-                    let tx = match provider.get_transaction_by_hash(hash).await {
-                        Ok(tx) => tx,
-                        Err(err) => {
-                            error!(target: "pending-tx-fetcher", %hash, "fail to get pending transaction by hash: {err:#}");
-                            continue;
-                        }
-                    };
-
-                    trace!(target: "pending-tx-fetcher", %hash, "transaction: {tx:?}");
-                    ch_tx_tx.send(tx).await.unwrap();
-                }
-            });
-        }
-
-        {
-            let provider = self.provider.clone();
-
-            tokio::spawn(async move {
-                let mut stream = provider
-                    .subscribe_pending_transactions()
-                    .await
-                    .expect("fail to subscribe pending transactions");
-
-                while let Ok(tx) = stream.recv().await {
-                    ch_hash_tx.send(tx).await.unwrap();
-                }
-            });
-        }
-
-        let stream = async_stream::stream! {
-            while let Some(tx) = ch_tx_rx.recv().await {
-                yield tx;
-            }
-        };
+        let stream = TransactionStream::new(self.provider.as_ref(), stream, 256);
+        let stream = stream.filter_map(|res| async move { res.ok() });
 
         Ok(Box::pin(stream))
+    }
+}
+
+/// Errors `TransactionStream` can throw
+#[derive(Debug, thiserror::Error)]
+pub enum GetTransactionError {
+    #[error("Failed to get transaction `{0}`: {1}")]
+    ProviderError(B256, RpcError<TransportErrorKind>),
+
+    /// `get_transaction` resulted in a `None`
+    #[error("Transaction `{0}` not found")]
+    NotFound(B256),
+}
+
+pub(crate) type TransactionFut<'a> = Pin<Box<dyn Future<Output = TransactionResult> + Send + 'a>>;
+
+pub(crate) type TransactionResult = Result<Transaction, GetTransactionError>;
+
+/// Drains a stream of transaction hashes and yields entire `Transaction`.
+#[must_use = "streams do nothing unless polled"]
+pub struct TransactionStream<'a, T, St> {
+    /// Currently running futures pending completion.
+    pub(crate) pending: FuturesUnordered<TransactionFut<'a>>,
+    /// Temporary buffered transaction that get started as soon as another future finishes.
+    pub(crate) buffered: VecDeque<B256>,
+    /// The provider that gets the transaction
+    pub(crate) provider: &'a dyn Provider<T>,
+    /// A stream of transaction hashes.
+    pub(crate) stream: St,
+    /// Marks if the stream is done
+    stream_done: bool,
+    /// max allowed futures to execute at once.
+    pub(crate) max_concurrent: usize,
+}
+
+impl<'a, T: Clone + Transport, St> TransactionStream<'a, T, St> {
+    /// Create a new `TransactionStream` instance
+    pub fn new(provider: &'a dyn Provider<T>, stream: St, max_concurrent: usize) -> Self {
+        Self {
+            pending: Default::default(),
+            buffered: Default::default(),
+            provider,
+            stream,
+            stream_done: false,
+            max_concurrent,
+        }
+    }
+
+    /// Push a future into the set
+    pub(crate) fn push_tx(&mut self, tx: B256) {
+        let fut = self
+            .provider
+            .root()
+            .raw_request::<_, Option<Transaction>>("eth_getTransactionByHash".into(), (tx,))
+            .then(move |res| match res {
+                Ok(Some(tx)) => futures_util::future::ok(tx),
+                Ok(None) => futures_util::future::err(GetTransactionError::NotFound(tx)),
+                Err(err) => futures_util::future::err(GetTransactionError::ProviderError(tx, err)),
+            });
+        self.pending.push(Box::pin(fut));
+    }
+}
+
+impl<'a, T, St> Stream for TransactionStream<'a, T, St>
+where
+    T: Clone + Transport,
+    St: Stream<Item = B256> + Unpin + 'a,
+{
+    type Item = TransactionResult;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let this = self.get_mut();
+
+        // drain buffered transactions first
+        while this.pending.len() < this.max_concurrent {
+            if let Some(tx) = this.buffered.pop_front() {
+                this.push_tx(tx);
+            } else {
+                break;
+            }
+        }
+
+        if !this.stream_done {
+            loop {
+                match Stream::poll_next(Pin::new(&mut this.stream), cx) {
+                    Poll::Ready(Some(tx)) => {
+                        if this.pending.len() < this.max_concurrent {
+                            this.push_tx(tx);
+                        } else {
+                            this.buffered.push_back(tx);
+                        }
+                    }
+                    Poll::Ready(None) => {
+                        this.stream_done = true;
+                        break;
+                    }
+                    _ => break,
+                }
+            }
+        }
+
+        // poll running futures
+        if let tx @ Poll::Ready(Some(_)) = this.pending.poll_next_unpin(cx) {
+            return tx;
+        }
+
+        if this.stream_done && this.pending.is_empty() {
+            // all done
+            return Poll::Ready(None);
+        }
+
+        Poll::Pending
     }
 }

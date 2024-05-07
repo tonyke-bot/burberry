@@ -5,6 +5,6 @@ pub mod executor;
 mod macros;
 pub mod types;
 
+pub use async_trait::async_trait;
 pub use engine::Engine;
 pub use types::*;
-pub use async_trait::async_trait;

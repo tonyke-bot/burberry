@@ -22,9 +22,7 @@ impl<T> RawTransactionSender<T> {
 
 impl RawTransactionSender<BoxTransport> {
     pub fn new_http(url: &str) -> Self {
-        let provider = ProviderBuilder::new()
-            .on_http(url.parse().unwrap())
-            .unwrap();
+        let provider = ProviderBuilder::new().on_http(url.parse().unwrap());
         let provider = Arc::new(provider.boxed());
         Self { provider }
     }
