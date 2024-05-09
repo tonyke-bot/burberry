@@ -4,6 +4,7 @@ use crate::{
     action_submitter::ActionChannelSubmitter,
     types::{Collector, Executor, Strategy},
 };
+use eyre::Context;
 use futures::StreamExt;
 use tokio::{
     sync::broadcast::{self, error::RecvError, Sender},
@@ -111,6 +112,7 @@ where
         for mut strategy in self.strategies {
             let mut event_receiver = event_sender.subscribe();
             let action_sender = action_sender.clone();
+            strategy.sync_state().await.wrap_err("fail to sync state")?;
 
             let action_submitter = Arc::new(ActionChannelSubmitter::new(action_sender));
 
