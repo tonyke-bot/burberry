@@ -8,6 +8,10 @@ pub type CollectorStream<'a, E> = Pin<Box<dyn Stream<Item = E> + Send + 'a>>;
 
 #[async_trait]
 pub trait Collector<E>: Send + Sync {
+    fn name(&self) -> &str {
+        "Unnamed"
+    }
+
     async fn get_event_stream(&self) -> Result<CollectorStream<'_, E>>;
 }
 
@@ -24,6 +28,10 @@ where
     E: Send + Sync + Clone + 'static,
     A: Send + Sync + Clone + 'static,
 {
+    fn name(&self) -> &str {
+        "Unnamed"
+    }
+
     async fn sync_state(&mut self) -> Result<()> {
         Ok(())
     }
@@ -32,13 +40,16 @@ where
 }
 
 pub struct CollectorMap<E, F> {
-    collector: Box<dyn Collector<E>>,
+    inner: Box<dyn Collector<E>>,
     f: F,
 }
 
 impl<E, F> CollectorMap<E, F> {
     pub fn new(collector: Box<dyn Collector<E>>, f: F) -> Self {
-        Self { collector, f }
+        Self {
+            inner: collector,
+            f,
+        }
     }
 }
 
@@ -49,8 +60,12 @@ where
     E2: Send + Sync + 'static,
     F: Fn(E1) -> E2 + Send + Sync + Clone + 'static,
 {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
     async fn get_event_stream(&self) -> Result<CollectorStream<'_, E2>> {
-        let stream = self.collector.get_event_stream().await?;
+        let stream = self.inner.get_event_stream().await?;
         let f = self.f.clone();
         let stream = stream.map(f);
         Ok(Box::pin(stream))
@@ -58,13 +73,16 @@ where
 }
 
 pub struct CollectorFilterMap<E, F> {
-    collector: Box<dyn Collector<E>>,
+    inner: Box<dyn Collector<E>>,
     f: F,
 }
 
 impl<E, F> CollectorFilterMap<E, F> {
     pub fn new(collector: Box<dyn Collector<E>>, f: F) -> Self {
-        Self { collector, f }
+        Self {
+            inner: collector,
+            f,
+        }
     }
 }
 
@@ -75,8 +93,12 @@ where
     E2: Send + Sync + 'static,
     F: Fn(E1) -> Option<E2> + Send + Sync + Clone + Copy + 'static,
 {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
     async fn get_event_stream(&self) -> Result<CollectorStream<'_, E2>> {
-        let stream = self.collector.get_event_stream().await?;
+        let stream = self.inner.get_event_stream().await?;
         let f = self.f;
         let stream = stream.filter_map(move |v| async move { f(v) });
         Ok(Box::pin(stream))
@@ -85,17 +107,21 @@ where
 
 #[async_trait]
 pub trait Executor<A>: Send + Sync {
+    fn name(&self) -> &str {
+        "Unnamed"
+    }
+
     async fn execute(&self, action: A) -> Result<()>;
 }
 
 pub struct ExecutorMap<A, F> {
-    executor: Box<dyn Executor<A>>,
+    inner: Box<dyn Executor<A>>,
     f: F,
 }
 
 impl<A, F> ExecutorMap<A, F> {
     pub fn new(executor: Box<dyn Executor<A>>, f: F) -> Self {
-        Self { executor, f }
+        Self { inner: executor, f }
     }
 }
 
@@ -106,10 +132,14 @@ where
     A2: Send + Sync + 'static,
     F: Fn(A1) -> Option<A2> + Send + Sync + Clone + 'static,
 {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
     async fn execute(&self, action: A1) -> Result<()> {
         let action = (self.f)(action);
         match action {
-            Some(action) => self.executor.execute(action).await,
+            Some(action) => self.inner.execute(action).await,
             None => Ok(()),
         }
     }
