@@ -28,6 +28,10 @@ impl<T> PollFullBlockCollector<T> {
 
 #[async_trait]
 impl<T: Clone + Transport> Collector<Block> for PollFullBlockCollector<T> {
+    fn name(&self) -> &str {
+        "PollFullBlockCollector"
+    }
+
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
         let stream = async_stream::stream! {
             loop {

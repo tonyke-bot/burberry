@@ -243,6 +243,10 @@ impl Default for TelegramMessageDispatcher {
 
 #[async_trait]
 impl Executor<Message> for TelegramMessageDispatcher {
+    fn name(&self) -> &str {
+        "TelegramMessageDispatcher"
+    }
+
     async fn execute(&self, action: Message) -> eyre::Result<()> {
         tracing::debug!("received message: {action:?}");
 

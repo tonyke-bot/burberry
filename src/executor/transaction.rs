@@ -103,6 +103,10 @@ impl<T> TransactionSender<T> {
 
 #[async_trait::async_trait]
 impl<T: Clone + Transport> Executor<TransactionRequest> for TransactionSender<T> {
+    fn name(&self) -> &str {
+        "TransactionSender"
+    }
+
     async fn execute(&self, action: TransactionRequest) -> eyre::Result<()> {
         let mut action = action;
 

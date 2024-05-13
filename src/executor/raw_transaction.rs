@@ -50,6 +50,10 @@ impl RawTransactionSender<BoxTransport> {
 
 #[async_trait]
 impl<T: Clone + Transport> Executor<Bytes> for RawTransactionSender<T> {
+    fn name(&self) -> &str {
+        "RawTransactionSender"
+    }
+
     async fn execute(&self, action: Bytes) -> Result<()> {
         let send_result = self.provider.send_raw_transaction(&action).await;
 
