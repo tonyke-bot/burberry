@@ -135,9 +135,13 @@ where
         for mut strategy in self.strategies {
             let mut event_receiver = event_sender.subscribe();
             let action_sender = action_sender.clone();
-            strategy.sync_state().await.wrap_err("fail to sync state")?;
 
             let action_submitter = Arc::new(ActionChannelSubmitter::new(action_sender));
+
+            strategy
+                .sync_state(action_submitter.clone())
+                .await
+                .wrap_err("fail to sync state")?;
 
             set.spawn(async move {
                 debug!(name = strategy.name(), "starting strategy... ");

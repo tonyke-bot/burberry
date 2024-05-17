@@ -33,6 +33,10 @@ impl<PubSubFrontend> FullBlockCollector<PubSubFrontend> {
 
 #[async_trait]
 impl Collector<Block> for FullBlockCollector<PubSubFrontend> {
+    fn name(&self) -> &str {
+        "FullBlockCollector"
+    }
+
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
         let mut stream = self.provider.subscribe_blocks().await?.into_stream();
 

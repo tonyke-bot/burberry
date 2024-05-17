@@ -32,7 +32,7 @@ where
         "Unnamed"
     }
 
-    async fn sync_state(&mut self) -> Result<()> {
+    async fn sync_state(&mut self, _submitter: Arc<dyn ActionSubmitter<A>>) -> Result<()> {
         Ok(())
     }
 

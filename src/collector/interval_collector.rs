@@ -15,6 +15,10 @@ impl IntervalCollector {
 
 #[async_trait]
 impl Collector<Instant> for IntervalCollector {
+    fn name(&self) -> &str {
+        "IntervalCollector"
+    }
+
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Instant>> {
         let stream = async_stream::stream! {
             loop {

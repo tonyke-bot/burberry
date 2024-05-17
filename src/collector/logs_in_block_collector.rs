@@ -39,6 +39,10 @@ impl LogsInBlockCollector {
 
 #[async_trait]
 impl Collector<(Block, Vec<Log>)> for LogsInBlockCollector {
+    fn name(&self) -> &str {
+        "LogsInBlockCollector"
+    }
+
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, (Block, Vec<Log>)>> {
         let mut stream = self.provider.subscribe_blocks().await?.into_stream();
 

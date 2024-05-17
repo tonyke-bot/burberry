@@ -17,6 +17,10 @@ impl BlockCollector {
 
 #[async_trait]
 impl Collector<Block> for BlockCollector {
+    fn name(&self) -> &str {
+        "BlockCollector"
+    }
+
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
         let stream = self.provider.subscribe_blocks().await?;
 

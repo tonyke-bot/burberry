@@ -28,6 +28,10 @@ impl MempoolCollector {
 
 #[async_trait]
 impl Collector<Transaction> for MempoolCollector {
+    fn name(&self) -> &str {
+        "MempoolCollector"
+    }
+
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Transaction>> {
         let stream = self
             .provider
