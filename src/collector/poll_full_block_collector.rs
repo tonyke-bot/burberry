@@ -3,6 +3,7 @@ use std::sync::{atomic::AtomicU64, Arc};
 use std::time::Duration;
 
 use alloy::rpc::types::eth::BlockId;
+use alloy::rpc::types::BlockTransactionsKind;
 use alloy::transports::Transport;
 use alloy::{providers::Provider, rpc::types::eth::Block};
 use async_trait::async_trait;
@@ -35,7 +36,7 @@ impl<T: Clone + Transport> Collector<Block> for PollFullBlockCollector<T> {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
         let stream = async_stream::stream! {
             loop {
-                match self.provider.get_block(BlockId::latest(), true).await {
+                match self.provider.get_block(BlockId::latest(), BlockTransactionsKind::Full).await {
                     Ok(Some(block)) => {
                         let current_block = block.header.number.unwrap();
 

@@ -5,18 +5,7 @@ edition = "2021"
 rust-version = "1.76"
 
 [dependencies]
-alloy = { git = "https://github.com/alloy-rs/alloy.git", rev = "b79db21", features = [
-    "contract",
-    "network",
-    "providers",
-    "provider-ipc",
-    "provider-ws",
-    "rpc-client",
-    "rpc-client-ws",
-    "rpc-types-eth",
-    "signers",
-    "signer-wallet",
-] }
+alloy = { version = "0.1", features = [ "full" ] }
 async-stream = "0.3"
 async-trait = "0.1"
 eyre = "0.6"

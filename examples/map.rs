@@ -3,9 +3,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use alloy::primitives::B256;
-use alloy::providers::Provider;
+use alloy::providers::ProviderBuilder;
+use alloy::providers::{Provider, WsConnect};
 use alloy::rpc::types::eth::{Block, Transaction};
-use alloy::{providers::ProviderBuilder, rpc::client::WsConnect};
 use burberry::collector::BlockCollector;
 use burberry::{
     collector::MempoolCollector, map_collector, map_executor, submit_action, ActionSubmitter,

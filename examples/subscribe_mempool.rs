@@ -1,7 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use alloy::{providers::ProviderBuilder, rpc::client::WsConnect};
+use alloy::providers::ProviderBuilder;
+use alloy::providers::WsConnect;
 use burberry::{collector::MempoolCollector, Collector};
 use futures::StreamExt;
 

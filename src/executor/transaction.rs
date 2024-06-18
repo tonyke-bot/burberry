@@ -1,29 +1,28 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use alloy::rpc::types::eth::BlockId;
+use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::Transport;
 use alloy::{
-    network::{eip2718::Encodable2718, EthereumSigner, TransactionBuilder},
+    network::{eip2718::Encodable2718, EthereumWallet, TransactionBuilder},
     primitives::{keccak256, Address, Bytes},
     providers::{Provider, RootProvider},
     rpc::types::eth::TransactionRequest,
-    signers::wallet::LocalWallet,
 };
 
 use crate::types::Executor;
 
 pub struct TransactionSender<T> {
     provider: Arc<dyn Provider<T>>,
-    signers: HashMap<Address, EthereumSigner>,
+    signers: HashMap<Address, EthereumWallet>,
     tx_submission_provider: Option<Arc<dyn Provider>>,
 }
 
 impl<T> TransactionSender<T> {
-    pub fn new(provider: Arc<dyn Provider<T>>, signers: Vec<LocalWallet>) -> Self {
+    pub fn new(provider: Arc<dyn Provider<T>>, signers: Vec<PrivateKeySigner>) -> Self {
         let signers: HashMap<_, _> = signers
             .into_iter()
-            .map(|s| (s.address(), EthereumSigner::new(s)))
+            .map(|s| (s.address(), EthereumWallet::new(s)))
             .collect();
 
         for signer in signers.keys() {
@@ -42,11 +41,11 @@ impl<T> TransactionSender<T> {
     pub fn new_with_dedicated_tx_submission_endpoint(
         provider: Arc<dyn Provider<T>>,
         tx_submission_provider: Arc<dyn Provider>,
-        signers: Vec<LocalWallet>,
+        signers: Vec<PrivateKeySigner>,
     ) -> Self {
         let signers: HashMap<_, _> = signers
             .into_iter()
-            .map(|s| (s.address(), EthereumSigner::new(s)))
+            .map(|s| (s.address(), EthereumWallet::new(s)))
             .collect();
 
         for signer in signers.keys() {
@@ -63,7 +62,7 @@ impl<T> TransactionSender<T> {
     pub fn new_http_dedicated(
         provider: Arc<dyn Provider<T>>,
         tx_submission_endpoint: &str,
-        signers: Vec<LocalWallet>,
+        signers: Vec<PrivateKeySigner>,
     ) -> Self {
         let tx_submission_provider =
             Arc::new(RootProvider::<_>::new_http(tx_submission_endpoint.parse().unwrap()).boxed());
@@ -71,31 +70,34 @@ impl<T> TransactionSender<T> {
         Self::new_with_dedicated_tx_submission_endpoint(provider, tx_submission_provider, signers)
     }
 
-    pub fn new_with_flashbots(provider: Arc<dyn Provider<T>>, signers: Vec<LocalWallet>) -> Self {
+    pub fn new_with_flashbots(
+        provider: Arc<dyn Provider<T>>,
+        signers: Vec<PrivateKeySigner>,
+    ) -> Self {
         Self::new_http_dedicated(provider, "https://rpc.flashbots.net/fast", signers)
     }
 
     pub fn new_with_bsc_bloxroute(
         provider: Arc<dyn Provider<T>>,
-        signers: Vec<LocalWallet>,
+        signers: Vec<PrivateKeySigner>,
     ) -> Self {
         Self::new_http_dedicated(provider, "https://bsc.rpc.blxrbdn.com", signers)
     }
 
-    pub fn new_with_48club(provider: Arc<dyn Provider<T>>, signers: Vec<LocalWallet>) -> Self {
+    pub fn new_with_48club(provider: Arc<dyn Provider<T>>, signers: Vec<PrivateKeySigner>) -> Self {
         Self::new_http_dedicated(provider, "https://rpc-bsc.48.club", signers)
     }
 
     pub fn new_with_polygon_bloxroute(
         provider: Arc<dyn Provider<T>>,
-        signers: Vec<LocalWallet>,
+        signers: Vec<PrivateKeySigner>,
     ) -> Self {
         Self::new_http_dedicated(provider, "https://polygon.rpc.blxrbdn.com", signers)
     }
 
     pub fn new_with_arbitrum_sequencer(
         provider: Arc<dyn Provider<T>>,
-        signers: Vec<LocalWallet>,
+        signers: Vec<PrivateKeySigner>,
     ) -> Self {
         Self::new_http_dedicated(provider, "https://arb1-sequencer.arbitrum.io/rpc", signers)
     }
@@ -127,11 +129,7 @@ impl<T: Clone + Transport> Executor<TransactionRequest> for TransactionSender<T>
         };
 
         if action.nonce.is_none() {
-            let nonce = match self
-                .provider
-                .get_transaction_count(account, BlockId::latest())
-                .await
-            {
+            let nonce = match self.provider.get_transaction_count(account).await {
                 Ok(v) => v,
                 Err(err) => {
                     tracing::error!(?account, "failed to get nonce: {err:#}");
