@@ -224,7 +224,7 @@ impl TelegramMessageDispatcher {
 
         match response.json::<serde_json::Value>().await {
             Ok(value) => {
-                tracing::debug!("response: {value:?}");
+                tracing::debug!("response: {value}");
             }
             Err(err) => {
                 eyre::bail!("failed to parse response: {err:#}");
