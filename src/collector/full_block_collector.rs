@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use alloy::{providers::Provider, pubsub::PubSubFrontend, rpc::types::eth::Block};
 use async_trait::async_trait;
-use futures_util::StreamExt;
+use futures::StreamExt;
 use tracing::{error, warn};
 
 use crate::types::{Collector, CollectorStream};
@@ -44,7 +44,7 @@ impl Collector<Block> for FullBlockCollector<PubSubFrontend> {
 
         let stream = async_stream::stream! {
             while let Some(block) = stream.next().await {
-                let block_number = block.header.number.unwrap();
+                let block_number = block.header.number;
 
                 loop {
                     match self.provider.get_block_by_number(block_number.into(), true).await {

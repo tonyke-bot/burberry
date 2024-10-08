@@ -38,7 +38,7 @@ impl<T: Clone + Transport> Collector<Block> for PollFullBlockCollector<T> {
             loop {
                 match self.provider.get_block(BlockId::latest(), BlockTransactionsKind::Full).await {
                     Ok(Some(block)) => {
-                        let current_block = block.header.number.unwrap();
+                        let current_block = block.header.number;
 
                         let old_block = self
                             .current_block

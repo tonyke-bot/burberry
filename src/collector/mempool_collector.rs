@@ -7,7 +7,8 @@ use alloy::{
 };
 use async_trait::async_trait;
 use eyre::WrapErr;
-use futures_util::{stream::FuturesUnordered, FutureExt, Stream, StreamExt};
+use futures::prelude::{stream::FuturesUnordered, Stream};
+use futures::{FutureExt, StreamExt};
 use std::future::Future;
 use std::{
     collections::VecDeque,
@@ -99,9 +100,9 @@ impl<'a, T: Clone + Transport, St> TransactionStream<'a, T, St> {
             .root()
             .raw_request::<_, Option<Transaction>>("eth_getTransactionByHash".into(), (tx,))
             .then(move |res| match res {
-                Ok(Some(tx)) => futures_util::future::ok(tx),
-                Ok(None) => futures_util::future::err(GetTransactionError::NotFound(tx)),
-                Err(err) => futures_util::future::err(GetTransactionError::ProviderError(tx, err)),
+                Ok(Some(tx)) => futures::future::ok(tx),
+                Ok(None) => futures::future::err(GetTransactionError::NotFound(tx)),
+                Err(err) => futures::future::err(GetTransactionError::ProviderError(tx, err)),
             });
         self.pending.push(Box::pin(fut));
     }

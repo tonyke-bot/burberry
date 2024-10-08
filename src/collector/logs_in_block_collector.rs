@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use alloy::{
-    primitives::B256,
+    primitives::BlockHash,
     providers::Provider,
     pubsub::PubSubFrontend,
     rpc::types::eth::{Block, Filter, Log},
@@ -21,7 +21,7 @@ impl LogsInBlockCollector {
         Self { provider, filter }
     }
 
-    async fn block_to_logs(&self, block_hash: B256) -> Option<Vec<Log>> {
+    async fn block_to_logs(&self, block_hash: BlockHash) -> Option<Vec<Log>> {
         let logs = self
             .provider
             .get_logs(&self.filter.clone().at_block_hash(block_hash))
@@ -48,12 +48,7 @@ impl Collector<(Block, Vec<Log>)> for LogsInBlockCollector {
 
         let stream = async_stream::stream! {
             while let Some(block) = stream.next().await {
-                let block_hash = match block.header.hash {
-                    Some(block_hash) => block_hash,
-                    None => continue,
-                };
-
-                let logs = match self.block_to_logs(block_hash).await {
+                let logs = match self.block_to_logs(block.header.hash).await {
                     Some(logs) => logs,
                     None => continue,
                 };
