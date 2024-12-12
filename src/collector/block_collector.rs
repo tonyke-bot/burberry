@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use alloy::{providers::Provider, pubsub::PubSubFrontend, rpc::types::eth::Block};
+use alloy::{providers::Provider, pubsub::PubSubFrontend, rpc::types::Header};
 use async_trait::async_trait;
 
 use crate::types::{Collector, CollectorStream};
@@ -16,12 +16,12 @@ impl BlockCollector {
 }
 
 #[async_trait]
-impl Collector<Block> for BlockCollector {
+impl Collector<Header> for BlockCollector {
     fn name(&self) -> &str {
         "BlockCollector"
     }
 
-    async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
+    async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Header>> {
         let stream = self.provider.subscribe_blocks().await?;
 
         Ok(Box::pin(stream.into_stream()))

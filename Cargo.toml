@@ -5,21 +5,21 @@ edition = "2021"
 rust-version = "1.76"
 
 [dependencies]
-alloy = { version = "0.4", features = ["full"], optional = true }
+alloy = { version = "0.6.4", features = ["full"], optional = true }
 async-stream = "0.3"
 async-trait = "0.1"
 eyre = "0.6"
 futures = "0.3"
-reqwest = { version = "0.12", features = ["json"] }
-serde_json = "1"
-tokio = "1"
+reqwest = { version = "0.12", features = ["json"], optional = true }
+serde_json = { version = "1.0", optional = true }
+thiserror = { version = "1.0", optional = true }
+tokio = { version = "1", features = ["rt"] }
 tracing = { version = "0.1", features = ["log"] }
-thiserror = "1.0"
 
 [features]
 default = ["ethereum", "telegram"]
-ethereum = ["dep:alloy"]
-telegram = ["tokio/full"]
+ethereum = ["dep:alloy", "dep:thiserror"]
+telegram = ["dep:reqwest", "dep:serde_json"]
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

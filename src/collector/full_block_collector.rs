@@ -44,10 +44,10 @@ impl Collector<Block> for FullBlockCollector<PubSubFrontend> {
 
         let stream = async_stream::stream! {
             while let Some(block) = stream.next().await {
-                let block_number = block.header.number;
+                let block_number = block.number;
 
                 loop {
-                    match self.provider.get_block_by_number(block_number.into(), true).await {
+                    match self.provider.get_block_by_number(block_number.into(), true.into()).await {
                         Ok(Some(block)) => {
                             yield block;
                         }

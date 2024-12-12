@@ -5,7 +5,8 @@ use std::sync::Arc;
 use alloy::primitives::B256;
 use alloy::providers::ProviderBuilder;
 use alloy::providers::{Provider, WsConnect};
-use alloy::rpc::types::eth::{Block, Transaction};
+use alloy::rpc::types::eth::Transaction;
+use alloy::rpc::types::Header;
 use burberry::collector::BlockCollector;
 use burberry::{
     collector::MempoolCollector, map_collector, map_executor, submit_action, ActionSubmitter,
@@ -48,10 +49,10 @@ impl Strategy<Event, Action> for EchoStrategy {
     async fn process_event(&mut self, event: Event, submitter: Arc<dyn ActionSubmitter<Action>>) {
         match event {
             Event::Block(block) => {
-                submit_action!(submitter, Action::EchoBlock, block.header.number.unwrap());
+                submit_action!(submitter, Action::EchoBlock, block.number);
             }
             Event::Transaction(tx) => {
-                submit_action!(submitter, Action::EchoTransaction, tx.hash);
+                submit_action!(submitter, Action::EchoTransaction, *tx.inner.tx_hash());
             }
         }
     }
@@ -70,7 +71,7 @@ impl<T: Debug + Send + Sync> Executor<T> for EchoExecutor<T> {
 
 #[derive(Debug, Clone)]
 enum Event {
-    Block(Block),
+    Block(Header),
     Transaction(Transaction),
 }
 
