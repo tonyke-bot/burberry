@@ -1,12 +1,17 @@
 mod map;
 mod printer;
+
+#[cfg(feature = "telegram")]
 mod telegram;
 
 use std::fmt::Debug;
 
 pub use map::ActionSubmitterMap;
 pub use printer::ActionPrinter;
+
+#[cfg(feature = "telegram")]
 pub use telegram::TelegramSubmitter;
+
 use tokio::sync::broadcast::Sender;
 
 use crate::ActionSubmitter;

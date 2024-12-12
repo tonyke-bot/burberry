@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.76"
 
 [dependencies]
-alloy = { version = "0.4", features = [ "full" ] }
+alloy = { version = "0.4", features = ["full"], optional = true }
 async-stream = "0.3"
 async-trait = "0.1"
 eyre = "0.6"
@@ -15,6 +15,11 @@ serde_json = "1"
 tokio = "1"
 tracing = { version = "0.1", features = ["log"] }
 thiserror = "1.0"
+
+[features]
+default = ["ethereum", "telegram"]
+ethereum = ["dep:alloy"]
+telegram = ["tokio/full"]
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
