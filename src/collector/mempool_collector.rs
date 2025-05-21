@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
 use crate::types::{Collector, CollectorStream};
-use alloy::transports::{RpcError, Transport, TransportErrorKind};
-use alloy::{
-    primitives::B256, providers::Provider, pubsub::PubSubFrontend, rpc::types::eth::Transaction,
-};
+use alloy::transports::{RpcError, TransportErrorKind};
+use alloy::{primitives::B256, providers::Provider, rpc::types::eth::Transaction};
 use async_trait::async_trait;
 use eyre::WrapErr;
 use futures::prelude::{stream::FuturesUnordered, Stream};
@@ -18,11 +16,11 @@ use std::{
 use tracing::error;
 
 pub struct MempoolCollector {
-    provider: Arc<dyn Provider<PubSubFrontend>>,
+    provider: Arc<dyn Provider>,
 }
 
 impl MempoolCollector {
-    pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>) -> Self {
+    pub fn new(provider: Arc<dyn Provider>) -> Self {
         Self { provider }
     }
 }
@@ -65,13 +63,13 @@ pub(crate) type TransactionResult = Result<Transaction, GetTransactionError>;
 
 /// Drains a stream of transaction hashes and yields entire `Transaction`.
 #[must_use = "streams do nothing unless polled"]
-pub struct TransactionStream<'a, T, St> {
+pub struct TransactionStream<'a, St> {
     /// Currently running futures pending completion.
     pub(crate) pending: FuturesUnordered<TransactionFut<'a>>,
     /// Temporary buffered transaction that get started as soon as another future finishes.
     pub(crate) buffered: VecDeque<B256>,
     /// The provider that gets the transaction
-    pub(crate) provider: &'a dyn Provider<T>,
+    pub(crate) provider: &'a dyn Provider,
     /// A stream of transaction hashes.
     pub(crate) stream: St,
     /// Marks if the stream is done
@@ -80,9 +78,9 @@ pub struct TransactionStream<'a, T, St> {
     pub(crate) max_concurrent: usize,
 }
 
-impl<'a, T: Clone + Transport, St> TransactionStream<'a, T, St> {
+impl<'a, St> TransactionStream<'a, St> {
     /// Create a new `TransactionStream` instance
-    pub fn new(provider: &'a dyn Provider<T>, stream: St, max_concurrent: usize) -> Self {
+    pub fn new(provider: &'a dyn Provider, stream: St, max_concurrent: usize) -> Self {
         Self {
             pending: Default::default(),
             buffered: Default::default(),
@@ -108,9 +106,8 @@ impl<'a, T: Clone + Transport, St> TransactionStream<'a, T, St> {
     }
 }
 
-impl<'a, T, St> Stream for TransactionStream<'a, T, St>
+impl<'a, St> Stream for TransactionStream<'a, St>
 where
-    T: Clone + Transport,
     St: Stream<Item = B256> + Unpin + 'a,
 {
     type Item = TransactionResult;

@@ -17,7 +17,7 @@ use burberry::{
 async fn main() {
     let ws = WsConnect::new("wss://eth.merkle.io");
     let provider = ProviderBuilder::new()
-        .on_ws(ws)
+        .connect_ws(ws)
         .await
         .expect("fail to create ws provider");
 

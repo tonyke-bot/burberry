@@ -1,29 +1,26 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use alloy::{providers::Provider, pubsub::PubSubFrontend, rpc::types::eth::Block};
+use alloy::{providers::Provider,  rpc::types::eth::Block};
 use async_trait::async_trait;
 use futures::StreamExt;
 use tracing::{error, warn};
 
 use crate::types::{Collector, CollectorStream};
 
-pub struct FullBlockCollector<PubSubFrontend> {
-    provider: Arc<dyn Provider<PubSubFrontend>>,
+pub struct FullBlockCollector {
+    provider: Arc<dyn Provider>,
     retry_interval: Duration,
 }
 
-impl<PubSubFrontend> FullBlockCollector<PubSubFrontend> {
-    pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>) -> Self {
+impl FullBlockCollector {
+    pub fn new(provider: Arc<dyn Provider>) -> Self {
         Self::new_with_config(provider, Duration::from_millis(50))
     }
 
     /// Create a new `FullBlockCollector` with a custom retry interval. A retry will happen when the client returns
     /// "header not found"
-    pub fn new_with_config(
-        provider: Arc<dyn Provider<PubSubFrontend>>,
-        retry_interval: Duration,
-    ) -> Self {
+    pub fn new_with_config(provider: Arc<dyn Provider>, retry_interval: Duration) -> Self {
         Self {
             provider,
             retry_interval,
@@ -32,7 +29,7 @@ impl<PubSubFrontend> FullBlockCollector<PubSubFrontend> {
 }
 
 #[async_trait]
-impl Collector<Block> for FullBlockCollector<PubSubFrontend> {
+impl Collector<Block> for FullBlockCollector {
     fn name(&self) -> &str {
         "FullBlockCollector"
     }
@@ -47,7 +44,7 @@ impl Collector<Block> for FullBlockCollector<PubSubFrontend> {
                 let block_number = block.number;
 
                 loop {
-                    match self.provider.get_block_by_number(block_number.into(), true.into()).await {
+                    match self.provider.get_block_by_number(block_number.into()).full().await {
                         Ok(Some(block)) => {
                             yield block;
                         }

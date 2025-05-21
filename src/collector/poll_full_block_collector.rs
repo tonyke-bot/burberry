@@ -3,22 +3,20 @@ use std::sync::{atomic::AtomicU64, Arc};
 use std::time::Duration;
 
 use alloy::rpc::types::eth::BlockId;
-use alloy::rpc::types::BlockTransactionsKind;
-use alloy::transports::Transport;
 use alloy::{providers::Provider, rpc::types::eth::Block};
 use async_trait::async_trait;
 use tracing::error;
 
 use crate::types::{Collector, CollectorStream};
 
-pub struct PollFullBlockCollector<T> {
-    provider: Arc<dyn Provider<T>>,
+pub struct PollFullBlockCollector {
+    provider: Arc<dyn Provider>,
     interval: Duration,
     current_block: AtomicU64,
 }
 
-impl<T> PollFullBlockCollector<T> {
-    pub fn new(provider: Arc<dyn Provider<T>>, interval: Duration) -> Self {
+impl PollFullBlockCollector {
+    pub fn new(provider: Arc<dyn Provider>, interval: Duration) -> Self {
         Self {
             provider,
             interval,
@@ -28,7 +26,7 @@ impl<T> PollFullBlockCollector<T> {
 }
 
 #[async_trait]
-impl<T: Clone + Transport> Collector<Block> for PollFullBlockCollector<T> {
+impl Collector<Block> for PollFullBlockCollector {
     fn name(&self) -> &str {
         "PollFullBlockCollector"
     }
@@ -36,7 +34,7 @@ impl<T: Clone + Transport> Collector<Block> for PollFullBlockCollector<T> {
     async fn get_event_stream(&self) -> eyre::Result<CollectorStream<'_, Block>> {
         let stream = async_stream::stream! {
             loop {
-                match self.provider.get_block(BlockId::latest(), BlockTransactionsKind::Full).await {
+                match self.provider.get_block(BlockId::latest()).full().await {
                     Ok(Some(block)) => {
                         let current_block = block.header.number;
 

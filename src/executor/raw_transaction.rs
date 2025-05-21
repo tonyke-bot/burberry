@@ -1,5 +1,4 @@
 use alloy::providers::ProviderBuilder;
-use alloy::transports::{BoxTransport, Transport};
 use alloy::{
     primitives::{keccak256, Bytes},
     providers::Provider,
@@ -10,20 +9,20 @@ use std::sync::Arc;
 
 use crate::types::Executor;
 
-pub struct RawTransactionSender<T> {
-    provider: Arc<dyn Provider<T>>,
+pub struct RawTransactionSender {
+    provider: Arc<dyn Provider>,
 }
 
-impl<T> RawTransactionSender<T> {
-    pub fn new(provider: Arc<dyn Provider<T>>) -> Self {
+impl RawTransactionSender {
+    pub fn new(provider: Arc<dyn Provider>) -> Self {
         Self { provider }
     }
 }
 
-impl RawTransactionSender<BoxTransport> {
+impl RawTransactionSender {
     pub fn new_http(url: &str) -> Self {
-        let provider = ProviderBuilder::new().on_http(url.parse().unwrap());
-        let provider = Arc::new(provider.boxed());
+        let provider = ProviderBuilder::default().connect_http(url.parse().unwrap());
+        let provider = Arc::new(provider);
         Self { provider }
     }
 
@@ -49,7 +48,7 @@ impl RawTransactionSender<BoxTransport> {
 }
 
 #[async_trait]
-impl<T: Clone + Transport> Executor<Bytes> for RawTransactionSender<T> {
+impl Executor<Bytes> for RawTransactionSender {
     fn name(&self) -> &str {
         "RawTransactionSender"
     }

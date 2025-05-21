@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use alloy::{
     providers::Provider,
-    pubsub::PubSubFrontend,
     rpc::types::eth::{Filter, Log},
 };
 use async_trait::async_trait;
@@ -11,12 +10,12 @@ use futures::StreamExt;
 use crate::types::{Collector, CollectorStream};
 
 pub struct LogCollector {
-    provider: Arc<dyn Provider<PubSubFrontend>>,
+    provider: Arc<dyn Provider>,
     filter: Filter,
 }
 
 impl LogCollector {
-    pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>, filter: Filter) -> Self {
+    pub fn new(provider: Arc<dyn Provider>, filter: Filter) -> Self {
         Self { provider, filter }
     }
 }

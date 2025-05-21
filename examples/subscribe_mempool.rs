@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use alloy::providers::ProviderBuilder;
 use alloy::providers::WsConnect;
@@ -10,7 +9,7 @@ use futures::StreamExt;
 async fn main() {
     let ws = WsConnect::new("wss://eth.merkle.io");
     let provider = ProviderBuilder::new()
-        .on_ws(ws)
+        .connect_ws(ws)
         .await
         .expect("fail to create ws provider");
 
@@ -20,8 +19,9 @@ async fn main() {
         .await
         .expect("fail to get event stream");
 
+    println!("start to receive tx from mempool");
+
     while let Some(tx) = stream.next().await {
-        tokio::time::sleep(Duration::from_secs(500)).await;
         println!("received tx: {:?}", tx);
     }
 }

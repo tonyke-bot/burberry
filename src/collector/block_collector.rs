@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
-use alloy::{providers::Provider, pubsub::PubSubFrontend, rpc::types::Header};
+use alloy::{providers::Provider, rpc::types::Header};
 use async_trait::async_trait;
 
 use crate::types::{Collector, CollectorStream};
 
 pub struct BlockCollector {
-    provider: Arc<dyn Provider<PubSubFrontend>>,
+    provider: Arc<dyn Provider>,
 }
 
 impl BlockCollector {
-    pub fn new(provider: Arc<dyn Provider<PubSubFrontend>>) -> Self {
+    pub fn new(provider: Arc<dyn Provider>) -> Self {
         Self { provider }
     }
 }
